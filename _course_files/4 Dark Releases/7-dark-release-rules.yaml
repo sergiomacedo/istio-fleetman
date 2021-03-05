@@ -1,32 +1,46 @@
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
-apiVersion: networking.istio.io/v1alpha3
 metadata:
+  labels:
+    kiali_wizard: matching_routing
   name: fleetman-staff-service
   namespace: default
 spec:
   hosts:
-    - fleetman-staff-service
+  - fleetman-staff-service.default.svc.cluster.local
   http:
-    - match:
-        - headers:
-            x-my-header:
-              exact: canary
-      route:
-        - destination:
-            host: fleetman-staff-service
-            subset: risky
-    - route:
-        - destination:
-            host: fleetman-staff-service
-            subset: safe
+  - match:
+    - headers:
+        x-my-back:
+          exact: canary
+    route:
+    - destination:
+        host: fleetman-staff-service.default.svc.cluster.local
+        subset: safe
+      weight: 0
+    - destination:
+        host: fleetman-staff-service.default.svc.cluster.local
+        subset: risky
+      weight: 100
+  - route:
+    - destination:
+        host: fleetman-staff-service.default.svc.cluster.local
+        subset: safe
+      weight: 100
+    - destination:
+        host: fleetman-staff-service.default.svc.cluster.local
+        subset: risky
+      weight: 0
 ---
 kind: DestinationRule
 apiVersion: networking.istio.io/v1alpha3
 metadata:
   name: fleetman-staff-service
   namespace: default
+  labels:
+    kiali_wizard: matching_routing
 spec:
-  host: fleetman-staff-service
+  host: fleetman-staff-service.default.svc.cluster.local
   subsets:
     - labels:
         version: safe

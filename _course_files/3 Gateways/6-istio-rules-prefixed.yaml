@@ -1,0 +1,62 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: ingress-gateway-configuration
+  namespace: default
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - hosts:
+    - '*'  # Domain name of external website - do not use "*" in prod
+    port:
+      name: http
+      number: 80
+      protocol: HTTP
+---
+kind: VirtualService
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: fleetman-webapp
+  namespace: default
+spec:
+  hosts:
+#    - fleetman-webapp.default.svc.cluster.local
+    - "*"  # Same domain name used on the gateway above - do not use "*" in prod
+  gateways:
+    - ingress-gateway-configuration
+  http:
+    - match:
+      - uri:  # IF
+          prefix: "/experimental"
+      - uri:  # OR
+          prefix: "/canary"
+      ignoreUriCase: true
+      route: # THEN
+      - destination:
+          host: fleetman-webapp
+          subset: experimental
+    - match:
+      - uri :
+          prefix: "/"
+      ignoreUriCase: true
+      route:
+      - destination:
+          host: fleetman-webapp
+          subset: original
+---
+kind: DestinationRule
+apiVersion: networking.istio.io/v1alpha3
+metadata:
+  name: fleetman-webapp
+  namespace: default
+spec:
+  host: fleetman-webapp.default.svc.cluster.local
+  subsets:
+    - labels:
+        version: original
+      name: original
+    - labels:
+        version: experimental
+      name: experimental
+
